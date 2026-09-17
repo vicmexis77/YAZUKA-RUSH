@@ -1,4 +1,4 @@
-# 🗡️ Katana vs Zombie Horde
+# 🗡️ YAKUZA RUSH
 
 Un juego de acción, supervivencia y desplazamiento lateral 2D desarrollado en Python utilizando la librería **Pygame**. Enfrenta hordas de zombies, gestiona tu armamento y avanza a través de diferentes niveles.
 
