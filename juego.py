@@ -3,10 +3,9 @@ import random
 import sys
 import pygame
 
-# Inicialización de Pygame y Sonido
+# Inicialización de Pygame
 pygame.init()
 pygame.font.init()
-pygame.mixer.init()
 
 # Configuración de la ventana y el mundo
 ANCHO, ALTO = 800, 600
@@ -18,10 +17,8 @@ pygame.display.set_caption("Test de Juego - Katana vs Horde Zombie")
 reloj = pygame.time.Clock()
 fuente_hud = pygame.font.SysFont("Arial", 20, bold=True)
 fuente_puerta = pygame.font.SysFont("Arial", 24, bold=True)
-
-# --- REPRODUCCIÓN DE MÚSICA EN BUCLE ---
-pygame.mixer.music.load("Rain.mp3")
-pygame.mixer.music.play(-1)
+fuente_gameover_titulo = pygame.font.SysFont("Arial", 50, bold=True)
+fuente_gameover_sub = pygame.font.SysFont("Arial", 22, bold=True)
 
 # --- CARGA DE IMÁGENES DEL MENÚ ---
 menu_imagenes = [
@@ -36,7 +33,7 @@ menu_imagenes = [
     ),
 ]
 opcion_menu = 0  # 0: Jugar, 1: Opciones, 2: Salir
-estado_juego = "MENU"  # "MENU" o "JUGANDO"
+estado_juego = "MENU"  # "MENU", "JUGANDO" o "GAME_OVER"
 
 # --- CARGA DE FONDOS POR NIVEL ---
 fondo1_on = pygame.transform.scale(
@@ -217,6 +214,28 @@ def crear_zombies():
 
 zombies = crear_zombies()
 
+
+def reiniciar_juego():
+    """Restablece los valores del juego para iniciar una nueva partida"""
+    global pos_x, vida_jugador, nivel_actual, estado_arma, disparando
+    global temporizador_disparo, temporizador_herido, mirando_derecha
+    global puerta_abierta, temporizador_transicion, zombies, balas, estado_movimiento
+
+    pos_x = 200
+    vida_jugador = 100
+    nivel_actual = 1
+    estado_arma = "guardada"
+    disparando = False
+    temporizador_disparo = 0
+    temporizador_herido = 0
+    mirando_derecha = True
+    estado_movimiento = "idle"
+    puerta_abierta = False
+    temporizador_transicion = 0
+    balas.clear()
+    zombies = crear_zombies()
+
+
 # Bucle principal
 ejecutando = True
 while ejecutando:
@@ -234,6 +253,7 @@ while ejecutando:
                     opcion_menu = (opcion_menu - 1) % 3
                 elif evento.key == pygame.K_RETURN:
                     if opcion_menu == 0:
+                        reiniciar_juego()
                         estado_juego = "JUGANDO"
                     elif opcion_menu == 1:
                         pass  # Opciones no hace nada
@@ -386,6 +406,10 @@ while ejecutando:
                             z["cooldown_ataque"] = 60
                             if estado_arma == "desenfundada":
                                 temporizador_herido = 15
+
+                            # VERIFICAR SI EL JUGADOR MUERE
+                            if vida_jugador <= 0:
+                                estado_juego = "GAME_OVER"
                 else:
                     z["estado"] = "idle"
 
@@ -585,6 +609,41 @@ while ejecutando:
                 pantalla, (0, 0, 0), rect_bg.inflate(20, 10), border_radius=8
             )
             pantalla.blit(txt_promp, rect_bg)
+
+    elif estado_juego == "GAME_OVER":
+        pygame.mouse.set_visible(True)
+
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                ejecutando = False
+
+            elif evento.type == pygame.KEYDOWN:
+                if evento.key == pygame.K_RETURN:
+                    reiniciar_juego()
+                    estado_juego = "JUGANDO"
+                elif evento.key == pygame.K_ESCAPE:
+                    estado_juego = "MENU"
+
+        # Dibujar pantalla de muerte
+        pantalla.fill((20, 0, 0))
+
+        txt_titulo = fuente_gameover_titulo.render(
+            "¡HAS MUERTO!", True, (220, 20, 20)
+        )
+        rect_tit = txt_titulo.get_rect(center=(ANCHO // 2, ALTO // 2 - 50))
+        pantalla.blit(txt_titulo, rect_tit)
+
+        txt_sub = fuente_gameover_sub.render(
+            "PRESIONA ENTER PARA REINICIAR", True, (255, 255, 255)
+        )
+        rect_sub = txt_sub.get_rect(center=(ANCHO // 2, ALTO // 2 + 30))
+        pantalla.blit(txt_sub, rect_sub)
+
+        txt_esc = fuente_hud.render(
+            "Presiona ESC para salir al Menú Principal", True, (150, 150, 150)
+        )
+        rect_esc = txt_esc.get_rect(center=(ANCHO // 2, ALTO // 2 + 80))
+        pantalla.blit(txt_esc, rect_esc)
 
     pygame.display.flip()
     reloj.tick(60)
